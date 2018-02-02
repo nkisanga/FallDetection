@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
+        public static final String EXTRA_MESSAGE = "Project 1";
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
@@ -26,6 +26,5 @@ public class MainActivity extends AppCompatActivity {
         String message = editText.getText().toString();
         intent.putExtra(EXTRA_MESSAGE, message);
         startActivity(intent);
-    }
     }
 }
