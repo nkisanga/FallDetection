@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Fall Detection</string>
-    <string name="start_message">START</string>
+    <string name="start_message">Start Projecting Values on Screen</string>
     <string name="end_message">END</string>
     <string name="recording_message">Recording in Progress</string>
+    <string name="start_storing">Start Storing Accelerometer Data</string>
+    <string name="end_storing">End Storing Accelerometer Data</string>
 </resources>
