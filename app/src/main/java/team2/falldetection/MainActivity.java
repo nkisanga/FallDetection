@@ -8,6 +8,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import java.io.File;
@@ -38,7 +39,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     public void onStartClick(View view) {
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        // which speed of sensor delay should we use?
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     public void onStopClick(View view) {
@@ -105,11 +107,18 @@ public class MainActivity extends Activity implements SensorEventListener {
         String y_str = String.valueOf(y);
         String z_str = String.valueOf(z);
 
+        // Print log to the android studio console
+        Log.d("myTag", x_str+","+y_str+","+z_str+"\n");
+
+        /*
+
         try {
             writer.write(x_str+","+y_str+","+z_str+"\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        */
 
     }
 
