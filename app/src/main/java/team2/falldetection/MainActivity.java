@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends Activity implements SensorEventListener {
 
@@ -34,6 +35,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        init();
     }
 
     /** Called when the user taps the START button */
@@ -127,36 +130,94 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     }
 
-
-    /*
     // Code for Bluetooth
 
-    private OutputStream outputStream;
-    private InputStream inStream;
+    public UUID uuid_tp = UUID.fromString("54c7001e-263c-4fb6-bfa7-2dfe5fba0f5b");
 
-    private void init() throws IOException {
+    /*
+    public class ConnectThread extends Thread {
+        public final BluetoothSocket mmSocket;
+        public final BluetoothDevice mmDevice;
+
+        public ConnectThread(BluetoothDevice device) {
+            // Use a temporary object that is later assigned to mmSocket
+            // because mmSocket is final.
+            BluetoothSocket tmp = null;
+            mmDevice = device;
+
+            try {
+                // Get a BluetoothSocket to connect with the given BluetoothDevice.
+                // MY_UUID is the app's UUID string, also used in the server code.
+                tmp = device.createRfcommSocketToServiceRecord(uuid_tp);
+            } catch (IOException e) {
+                Log.d("bluetooth", "Socket's create() method failed", e);
+            }
+            mmSocket = tmp;
+        }
+
+        public void run(BluetoothAdapter blueAdapter) {
+            // Cancel discovery because it otherwise slows down the connection.
+            blueAdapter.cancelDiscovery();
+
+            try {
+                // Connect to the remote device through the socket. This call blocks
+                // until it succeeds or throws an exception.
+                mmSocket.connect();
+            } catch (IOException connectException) {
+                // Unable to connect; close the socket and return.
+                try {
+                    mmSocket.close();
+                } catch (IOException closeException) {
+                    Log.d("bluetooth", "Could not close the client socket", closeException);
+                }
+                return;
+            }
+
+            // The connection attempt succeeded. Perform work associated with
+            // the connection in a separate thread.
+            // manageMyConnectedSocket(mmSocket);
+            Log.d("bluetooth", "idk something works");
+        }
+
+        // Closes the client socket and causes the thread to finish.
+        public void cancel() {
+            try {
+                mmSocket.close();
+            } catch (IOException e) {
+                Log.d("bluetooth", "Could not close the client socket", e);
+            }
+        }
+    }
+
+    */
+
+    private void init() {
         BluetoothAdapter blueAdapter = BluetoothAdapter.getDefaultAdapter();
         if (blueAdapter != null) {
             if (blueAdapter.isEnabled()) {
+                Log.d("bluetooth", "works");
                 Set<BluetoothDevice> bondedDevices = blueAdapter.getBondedDevices();
 
-                if(bondedDevices.size() > 0) {
-                    Object[] devices = (Object []) bondedDevices.toArray();
-                    BluetoothDevice device = (BluetoothDevice) devices[position];
-                    ParcelUuid[] uuids = device.getUuids();
-                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(uuids[0].getUuid());
-                    socket.connect();
-                    outputStream = socket.getOutputStream();
-                    inStream = socket.getInputStream();
+                if (bondedDevices.size() > 0) {
+                    // There are paired devices. Get the name and address of each paired device.
+                    for (BluetoothDevice device : bondedDevices) {
+                        String deviceName = device.getName();
+                        String deviceHardwareAddress = device.getAddress(); // MAC address
+                        Log.d("bluetooth", deviceName + " " + deviceHardwareAddress);
+                        //ConnectThread(device);
+                        //Log.d("bluetooth", "here1");
+                        //ConnectThread.run();
+                    }
                 }
-
                 Log.e("error", "No appropriate paired devices.");
             } else {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 Log.e("error", "Bluetooth is disabled.");
             }
         }
     }
 
+    /*
     public void write(String s) throws IOException {
         outputStream.write(s.getBytes());
     }
@@ -166,7 +227,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytes = 0;
         int b = BUFFER_SIZE;
-
         while (true) {
             try {
                 bytes = inStream.read(buffer, bytes, BUFFER_SIZE - bytes);
