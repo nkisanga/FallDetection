@@ -21,11 +21,14 @@ import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 
+import static android.hardware.Sensor.TYPE_GYROSCOPE;
+
 public class MainActivity extends Activity implements SensorEventListener {
 
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
+    private Sensor mGyroscope;
     private FileWriter writer;
 
     @Override
@@ -35,6 +38,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mGyroscope = mSensorManager.getDefaultSensor(TYPE_GYROSCOPE);
 
         init();
     }
@@ -49,6 +53,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onStartClick(View view) {
         // which speed of sensor delay should we use?
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     public void onStopClick(View view) {
@@ -107,6 +112,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent event) {
 
+        String sensorName = event.sensor.getName();
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
@@ -116,7 +122,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         String z_str = String.valueOf(z);
 
         // Print log to the android studio console
-        Log.d("myTag", x_str+","+y_str+","+z_str+"\n");
+
+        Log.d("run1", sensorName + " " + x_str+","+y_str+","+z_str+"\n");
 
         /*
 
