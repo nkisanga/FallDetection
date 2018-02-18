@@ -13,21 +13,18 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.TextView;
-import android.widget.EditText;
 import android.widget.Button;
 import android.util.Log;
 import android.view.View;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Calendar;
+import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
-
 
 import static android.hardware.Sensor.TYPE_GYROSCOPE;
 
@@ -41,12 +38,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     Thread workerThread;
     byte[] readBuffer;
     int readBufferPosition;
-    int counter;
     volatile boolean stopWorker;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private Sensor mGyroscope;
-    private FileWriter writer;
     TextView myLabel;
     public UUID uuid_tp = UUID.fromString("54c7001e-263c-4fb6-bfa7-2dfe5fba0f5b");
 
@@ -58,7 +53,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         myLabel = (TextView)findViewById(R.id.label);
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         mGyroscope = mSensorManager.getDefaultSensor(TYPE_GYROSCOPE);
 
         Button openButton = (Button)findViewById(R.id.open);
@@ -72,10 +67,10 @@ public class MainActivity extends Activity implements SensorEventListener {
                 try
                 {
                     findBT();
-                    Log.d("bluetooth", "FindBT done");
+                    Log.d("bluetooth", "Bluetooth device found");
                     myLabel.setText("FindBT done");
                     openBT();
-                    Log.d("bluetooth", "FindBT done");
+                    Log.d("bluetooth", "Bluetooth device connected");
                     myLabel.setText("OpenBT done");
                 }
                 catch (IOException ex) { }
@@ -113,39 +108,8 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     public void onStopClick(View view) {
-        try
-        {
-            closeBT();
-            Log.d("bluetooth", "closeBT CLOSED");
-        }
-        catch (IOException ex) {
-            Log.d("bluetooth", "error closing BT...");
-        }
         mSensorManager.unregisterListener(this);
         Log.d("bluetooth", "Ending activities");
-    }
-
-
-    protected void onResume() {
-        super.onResume();
-
-        try {
-            writer = new FileWriter("fall_detection_file.txt", true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    protected void onPause() {
-        super.onPause();
-
-        if (writer != null) {
-            try {
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
@@ -157,6 +121,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onSensorChanged(SensorEvent event) {
 
         String sensorName = event.sensor.getName();
+
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
@@ -166,12 +131,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         String z_str = String.valueOf(z);
 
         DateFormat df = new SimpleDateFormat("MM-dd HH:mm:ss.SSS");
-        String date = df.format(Calendar.getInstance().getTime());
+        String date = df.format(new Date(event.timestamp / 1000000));
+        //String date = df.format(Calendar.getInstance().getTime());
 
         // Print log to the android studio console
 
         String data = date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
-        Log.d("run1", data + "\n");
+        Log.d("run", data + "\n");
 
         try
         {
@@ -315,6 +281,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             Log.d("bluetooth", "Data: " + msg);
             myLabel.setText("Data Sent!");
         } else {
+            Log.d("bluetooth", "ERROR: Message is null!");
             myLabel.setText("ERROR: Message is null!");
         }
     }
