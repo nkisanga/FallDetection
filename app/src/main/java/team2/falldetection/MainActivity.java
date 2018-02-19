@@ -67,11 +67,11 @@ public class MainActivity extends Activity implements SensorEventListener {
                 try
                 {
                     findBT();
-                    Log.d("bluetooth", "Bluetooth device found");
-                    myLabel.setText("FindBT done");
+                    Log.d("bluetooth", "FindBT done");
+                    myLabel.setText("Bluetooth device found");
                     openBT();
-                    Log.d("bluetooth", "Bluetooth device connected");
-                    myLabel.setText("OpenBT done");
+                    Log.d("bluetooth", "OpenBT done");
+                    myLabel.setText("Bluetooth device connected");
                 }
                 catch (IOException ex) { }
             }
@@ -200,16 +200,46 @@ public class MainActivity extends Activity implements SensorEventListener {
                 Log.d("bluetooth", "Although strangely, input stream has been set.");
             }
         } else {
-            Log.d("bluetooth", "Things are not null");
-            myLabel.setText("Things are not null");
+            Log.d("bluetooth", "Input/Output are not null");
+            myLabel.setText("Input/Output are not null");
         }
-
-        beginListenForData();
 
         Log.d("bluetooth", "Bluetooth Opened");
         myLabel.setText("Bluetooth Opened");
     }
 
+    /*
+    public void beginListenForData() {
+        byte[] buffer = new byte[1024];  // buffer store for the stream
+
+        int bytes; // bytes returned from read()
+
+        // Keep listening to the InputStream until an exception occurs
+        while (true) {
+            // Read from the InputStream
+            try {
+                bytes = mmInputStream.read(buffer);
+                final String incomingMessage = new String(buffer, 0, bytes);
+                Log.d("bluetooth", "InputStream: " + incomingMessage);
+
+                runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        myLabel.setText(incomingMessage);
+                    }
+                });
+
+
+            } catch (IOException e) {
+                Log.e("bluetooth", "write: Error reading Input Stream. " + e.getMessage());
+                break;
+            }
+        }
+    }
+    */
+
+    /*
     void beginListenForData()
     {
         final Handler handler = new Handler();
@@ -245,7 +275,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                                     {
                                         public void run()
                                         {
-                                            myLabel.setText("I'm running");
+                                            Log.d("bluetooth", data);
+                                            myLabel.setText(data);
                                         }
                                     });
                                 }
@@ -266,6 +297,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         workerThread.start();
     }
+    */
 
     void sendData(String msg) throws IOException
     {
