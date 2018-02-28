@@ -16,6 +16,8 @@ import android.widget.TextView;
 import android.widget.Button;
 import android.util.Log;
 import android.view.View;
+
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,6 +37,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     BluetoothDevice mmDevice;
     OutputStream mmOutputStream;
     InputStream mmInputStream;
+    FileOutputStream f_outputStream;
     Thread workerThread;
     byte[] readBuffer;
     int readBufferPosition;
@@ -58,6 +61,16 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         Button openButton = (Button)findViewById(R.id.open);
         Button closeButton = (Button)findViewById(R.id.close);
+
+
+        // creating a file on internal storage
+        String fileName = "fall_detection_data";
+        f_outputStream = null;
+        try {
+            f_outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //Open Button
         openButton.setOnClickListener(new View.OnClickListener()
@@ -105,11 +118,20 @@ public class MainActivity extends Activity implements SensorEventListener {
         // which speed of sensor delay should we use?
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
+
     }
 
     public void onStopClick(View view) {
         mSensorManager.unregisterListener(this);
         Log.d("bluetooth", "Ending activities");
+
+        if(f_outputStream!= null) {
+            try {
+                f_outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -139,6 +161,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         String data = date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
         Log.d("run", data + "\n");
 
+        // write data to file
+        try {
+            f_outputStream.write(data.getBytes());
+            f_outputStream.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        /*
         try
         {
             sendData(data);
@@ -146,6 +177,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         catch (IOException ex) {
             Log.d("bluetooth", "error sending data");
         }
+        */
 
     }
 
@@ -331,5 +363,4 @@ public class MainActivity extends Activity implements SensorEventListener {
             Log.d("bluetooth", "Error with closing BT");
         }
     }
-
 }
