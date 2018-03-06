@@ -36,6 +36,8 @@ import static android.hardware.Sensor.TYPE_GYROSCOPE;
 
 public class MainActivity extends Activity implements SensorEventListener {
 
+    public static boolean is_bluetooth_on = false;
+    public static boolean is_logging_on = false;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket mmSocket;
     BluetoothDevice mmDevice;
@@ -83,22 +85,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.d("external_storage", "File not found");
+            myLabel.setText("File not found");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        Log.d("external_storage","File written to "+file);
-
-        /*
-        //String fileName = "fall_detection_data";
-        f_outputStream = null;
-        try {
-            f_outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        */
-
+        Log.d("external_storage","File written to "+file);;
 
         //Open Button
         openButton.setOnClickListener(new View.OnClickListener()
@@ -114,7 +106,9 @@ public class MainActivity extends Activity implements SensorEventListener {
                     Log.d("bluetooth", "OpenBT done");
                     myLabel.setText("Bluetooth device connected");
                 }
-                catch (IOException ex) { }
+                catch (IOException ex) {
+                    myLabel.setText("Error finding/connecting bluetooth");
+                }
             }
         });
 
@@ -126,10 +120,15 @@ public class MainActivity extends Activity implements SensorEventListener {
                 try
                 {
                     closeBT();
+                    Log.d("bluetooth", "Bluetooth connection closed");
+                    myLabel.setText("Bluetooth connection closed");
                 }
-                catch (IOException ex) { }
+                catch (IOException ex) {
+                    myLabel.setText("Error closing bluetooth");
+                }
             }
         });
+
     }
 
     /**
@@ -142,17 +141,29 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     public void onStartClick(View view) {
-        Log.d("bluetooth", "pls start");
+        Log.d("bluetooth", "pls start bluetooth");
         // which speed of sensor delay should we use?
+        is_bluetooth_on = true;
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
 
     }
 
     public void onStopClick(View view) {
+        is_bluetooth_on = false;
         mSensorManager.unregisterListener(this);
         Log.d("bluetooth", "Ending activities");
+    }
 
+    public void onStartLogClick(View view) {
+        is_logging_on = true;
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
+    }
+
+    public void onStopLogClick(View view) {
+        is_logging_on = false;
+        mSensorManager.unregisterListener(this);
         if(f_outputStream!= null) {
             try {
                 f_outputStream.close();
@@ -161,6 +172,7 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
         }
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -189,25 +201,30 @@ public class MainActivity extends Activity implements SensorEventListener {
         String data = date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
         Log.d("run", data + "\n");
 
-
         // write data to file
-        try {
-            f_outputStream.write(data.getBytes());
-            f_outputStream.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (is_logging_on) {
+            try {
+                myLabel.setText("Writing data!");
+                data = data + "\n";
+                f_outputStream.write(data.getBytes());
+                f_outputStream.flush();
+            } catch (Exception e) {
+                myLabel.setText("Error writing data");
+                e.printStackTrace();
+            }
         }
 
-
-        /*
-        try
-        {
-            sendData(data);
+        if (is_bluetooth_on) {
+            try
+            {
+                myLabel.setText("Sending data!");
+                sendData(data);
+            }
+            catch (IOException ex) {
+                Log.d("bluetooth", "Error sending data");
+                myLabel.setText("Error sending data");
+            }
         }
-        catch (IOException ex) {
-            Log.d("bluetooth", "error sending data");
-        }
-        */
 
     }
 
@@ -300,8 +317,6 @@ public class MainActivity extends Activity implements SensorEventListener {
                 }
             }
         }
-        Log.d("bluetooth", "Bluetooth Device Found");
-        myLabel.setText("Bluetooth Device Found");
     }
 
     void openBT() throws IOException
@@ -324,8 +339,74 @@ public class MainActivity extends Activity implements SensorEventListener {
             myLabel.setText("Input/Output are not null");
         }
 
-        Log.d("bluetooth", "Bluetooth Opened");
-        myLabel.setText("Bluetooth Opened");
+        beginListenForData();
+    }
+
+    void beginListenForData()
+    {
+        final Handler handler = new Handler();
+        final byte delimiter = '\n';  //10; //This is the ASCII code for a newline character
+
+        stopWorker = false;
+        readBufferPosition = 0;
+        readBuffer = new byte[1024];
+
+        workerThread = new Thread(new Runnable()
+        {
+            public void run()
+            {
+                while(!Thread.currentThread().isInterrupted() && !stopWorker)
+                {
+                    try
+                    {
+                        int bytesAvailable = mmInputStream.available();
+                        if(bytesAvailable > 0)
+                        {
+
+                            Log.d("bluetooth", "here2.8");
+                            byte[] packetBytes = new byte[bytesAvailable];
+                            mmInputStream.read(packetBytes);
+                            for(int i=0;i<bytesAvailable;i++)
+                            {
+
+                                Log.d("bluetooth", "here3");
+                                byte b = packetBytes[i];
+                                if(b == delimiter)
+                                {
+
+                                    Log.d("bluetooth", "here4");
+                                    byte[] encodedBytes = new byte[readBufferPosition];
+                                    System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                    final String data = new String(encodedBytes, "US-ASCII");
+                                    readBufferPosition = 0;
+
+                                    handler.post(new Runnable()
+                                    {
+                                        public void run()
+                                        {
+                                            Log.d("bluetooth", data);
+                                            myLabel.setText(data);
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    readBuffer[readBufferPosition++] = b;
+                                }
+                            }
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        Log.d("bluetooth", "UMMMM");
+                        stopWorker = true;
+                    }
+                }
+            }
+        });
+
+        Log.d("bluetooth", "WHAT");
+        workerThread.start();
     }
 
     /*
@@ -422,16 +503,14 @@ public class MainActivity extends Activity implements SensorEventListener {
     void sendData(String msg) throws IOException
     {
         if (msg!=null) {
-            myLabel.setText("Message not null!");
             byte[] msgBuffer = msg.getBytes();
             try {
                 mmOutputStream.write(msg.getBytes());
             } catch (IOException e) {
                 Log.d("bluetooth", "Error with writing message!");
             }
-            mmOutputStream.flush();
-            Log.d("bluetooth", "Data: " + msg);
             myLabel.setText("Data Sent!");
+            mmOutputStream.flush();
         } else {
             Log.d("bluetooth", "ERROR: Message is null!");
             myLabel.setText("ERROR: Message is null!");
@@ -445,8 +524,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             mmOutputStream.close();
             mmInputStream.close();
             mmSocket.close();
-            Log.d("bluetooth", "Bluetooth Closed");
-            myLabel.setText("Bluetooth Closed");
         } catch (IOException e) {
             Log.d("bluetooth", "Error with closing BT");
         }
