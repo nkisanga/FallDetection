@@ -80,7 +80,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         File file = new File(dir, "fall_detection_data.txt");
 
         try {
-            f_outputStream = new FileOutputStream(file);
+            f_outputStream = new FileOutputStream(file, false);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -152,18 +152,20 @@ public class MainActivity extends Activity implements SensorEventListener {
     public void onStopClick(View view) {
         is_bluetooth_on = false;
         mSensorManager.unregisterListener(this);
-        Log.d("bluetooth", "Ending activities");
+        myLabel.setText("Stopped sending data to BT");
     }
 
     public void onStartLogClick(View view) {
         is_logging_on = true;
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
+        myLabel.setText("Start collecting logs");
     }
 
     public void onStopLogClick(View view) {
         is_logging_on = false;
         mSensorManager.unregisterListener(this);
+        myLabel.setText("Stopped collecting logs");
         if(f_outputStream!= null) {
             try {
                 f_outputStream.close();
