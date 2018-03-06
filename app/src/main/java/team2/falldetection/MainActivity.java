@@ -11,16 +11,20 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.widget.TextView;
 import android.widget.Button;
 import android.util.Log;
 import android.view.View;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Calendar;
@@ -62,15 +66,39 @@ public class MainActivity extends Activity implements SensorEventListener {
         Button openButton = (Button)findViewById(R.id.open);
         Button closeButton = (Button)findViewById(R.id.close);
 
+        // checks if external storage is available
+        checkExternalMedia();
 
-        // creating a file on internal storage
-        String fileName = "fall_detection_data";
+        // creating a file on external storage
+        File root = android.os.Environment.getExternalStorageDirectory();
+        Log.d("external_storage", "\nExternal file system root: "+root);
+
+        File dir = new File (root.getAbsolutePath());
+        dir.mkdirs();
+        File file = new File(dir, "fall_detection_data.txt");
+
+        try {
+            f_outputStream = new FileOutputStream(file);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.d("external_storage", "File not found");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Log.d("external_storage","File written to "+file);
+
+        /*
+        //String fileName = "fall_detection_data";
         f_outputStream = null;
         try {
             f_outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        */
+
 
         //Open Button
         openButton.setOnClickListener(new View.OnClickListener()
@@ -161,6 +189,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         String data = date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
         Log.d("run", data + "\n");
 
+
         // write data to file
         try {
             f_outputStream.write(data.getBytes());
@@ -168,6 +197,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
 
         /*
         try
@@ -180,6 +210,64 @@ public class MainActivity extends Activity implements SensorEventListener {
         */
 
     }
+
+    // code for accessing external storage
+    // https://stackoverflow.com/questions/8330276/write-a-file-in-external-storage-in-android
+
+    private void checkExternalMedia(){
+        boolean mExternalStorageAvailable = false;
+        boolean mExternalStorageWriteable = false;
+        String state = Environment.getExternalStorageState();
+
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            // Can read and write the media
+            mExternalStorageAvailable = mExternalStorageWriteable = true;
+        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            // Can only read the media
+            mExternalStorageAvailable = true;
+            mExternalStorageWriteable = false;
+        } else {
+            // Can't read or write
+            mExternalStorageAvailable = mExternalStorageWriteable = false;
+        }
+        Log.d("external_storage", "\n\nExternal Media: readable="
+                +mExternalStorageAvailable+" writable="+mExternalStorageWriteable);
+
+    }
+    /*
+    private void writeToSDFile(){
+
+        // Find the root of the external storage.
+        // http://developer.android.com/guide/topics/data/data-  storage.html#filesExternal
+
+        File root = android.os.Environment.getExternalStorageDirectory();
+        Log.d("external_storage", "\nExternal file system root: "+root);
+
+        // See http://stackoverflow.com/questions/3551821/android-write-to-sd-card-folder
+
+        File dir = new File (root.getAbsolutePath());
+        dir.mkdirs();
+        File file = new File(dir, "fall_detection_data.txt");
+
+        try {
+            FileOutputStream f = new FileOutputStream(file);
+            PrintWriter pw = new PrintWriter(f);
+            pw.println("Plz work");
+            pw.println("pretty plz");
+            pw.flush();
+            pw.close();
+            f.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.d("external_storage", "******* File not found. Did you" +
+                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.d("external_storage","File written to "+file);
+
+    } */
+
 
     // Code for Bluetooth
 
