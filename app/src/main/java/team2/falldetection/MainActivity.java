@@ -31,7 +31,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import static android.hardware.Sensor.TYPE_GRAVITY;
-import static android.hardware.Sensor.TYPE_GYROSCOPE;
 import static android.hardware.Sensor.TYPE_MAGNETIC_FIELD;
 
 public class MainActivity extends Activity implements SensorEventListener {
@@ -77,31 +76,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         // checks if external storage is available
         checkExternalMedia();
-
-        /*
-
-        // creating a file on external storage
-        File root = android.os.Environment.getExternalStorageDirectory();
-        Log.d("external_storage", "\nExternal file system root: "+root);
-
-        File dir = new File (root.getAbsolutePath());
-        dir.mkdirs();
-        File file = new File(dir, "fall_detection_data.txt");
-
-        try {
-            f_outputStream = new FileOutputStream(file, false);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Log.d("external_storage", "File not found");
-            myLabel.setText("File not found");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        Log.d("external_storage","File written to "+file);;
-
-        */
 
         //Open Button
         openButton.setOnClickListener(new View.OnClickListener()
@@ -273,9 +247,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 
             data_real_accel = date + " " + "Absolute Accelerometer" + " " + earthAcc[0] + "," + earthAcc[1] + "," + earthAcc[2];
 
+            // writes data to file if logging is on
             if (is_logging_on) {
                 try {
-                    myLabel.setText("Writing data!");
+                    myLabel.setText("Writing data to file number " + file_num);
                     data_accel = data_accel + "\n";
                     f_outputStream.write(data_accel.getBytes());
                     if (data_real_accel != null) {
@@ -284,11 +259,12 @@ public class MainActivity extends Activity implements SensorEventListener {
                     }
                     f_outputStream.flush();
                 } catch (Exception e) {
-                    myLabel.setText("Error writing data");
+                    myLabel.setText("Error writing data to file number " + file_num);
                     e.printStackTrace();
                 }
             }
 
+            // sends data through bluetooth if bluetooth is on
             if (is_bluetooth_on) {
                 try
                 {
@@ -312,7 +288,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
 
         // -------------------------------------------------------------------------------------
-
 
     }
 
@@ -339,7 +314,6 @@ public class MainActivity extends Activity implements SensorEventListener {
                 +mExternalStorageAvailable+" writable="+mExternalStorageWriteable);
 
     }
-
 
     // ------------------------------ Code for Bluetooth ---------------------------------
 
