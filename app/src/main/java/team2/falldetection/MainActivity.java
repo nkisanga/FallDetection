@@ -56,6 +56,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     public UUID uuid_tp = UUID.fromString("54c7001e-263c-4fb6-bfa7-2dfe5fba0f5b");
     private float[] gravityValues = null;
     private float[] magneticValues = null;
+    private int file_num;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,11 +70,15 @@ public class MainActivity extends Activity implements SensorEventListener {
         mGravity= mSensorManager.getDefaultSensor(TYPE_GRAVITY);
         mMagneticField = mSensorManager.getDefaultSensor(TYPE_MAGNETIC_FIELD);;
 
+        file_num = 0;
+
         Button openButton = (Button)findViewById(R.id.open);
         Button closeButton = (Button)findViewById(R.id.close);
 
         // checks if external storage is available
         checkExternalMedia();
+
+        /*
 
         // creating a file on external storage
         File root = android.os.Environment.getExternalStorageDirectory();
@@ -95,6 +100,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
 
         Log.d("external_storage","File written to "+file);;
+
+        */
 
         //Open Button
         openButton.setOnClickListener(new View.OnClickListener()
@@ -152,6 +159,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_GAME);
 
+
     }
 
     public void onStopClick(View view) {
@@ -166,6 +174,27 @@ public class MainActivity extends Activity implements SensorEventListener {
         mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_GAME);
         myLabel.setText("Start collecting logs");
+
+        // creating a file on external storage
+        File root = android.os.Environment.getExternalStorageDirectory();
+        Log.d("external_storage", "\nExternal file system root: "+root);
+
+        File dir = new File (root.getAbsolutePath());
+        dir.mkdirs();
+        File file = new File(dir, "fall_detection_data_" + file_num + ".txt" );
+
+        try {
+            f_outputStream = new FileOutputStream(file, false);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.d("external_storage", "File not found");
+            myLabel.setText("File not found");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Log.d("external_storage","File written to "+file);
     }
 
     public void onStopLogClick(View view) {
@@ -179,6 +208,8 @@ public class MainActivity extends Activity implements SensorEventListener {
                 e.printStackTrace();
             }
         }
+
+        file_num +=1;
     }
 
 
