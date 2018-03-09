@@ -24,15 +24,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Calendar;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import static android.hardware.Sensor.TYPE_GRAVITY;
 import static android.hardware.Sensor.TYPE_GYROSCOPE;
+import static android.hardware.Sensor.TYPE_MAGNETIC_FIELD;
 
 public class MainActivity extends Activity implements SensorEventListener {
 
@@ -49,10 +49,13 @@ public class MainActivity extends Activity implements SensorEventListener {
     int readBufferPosition;
     volatile boolean stopWorker;
     private SensorManager mSensorManager;
-    private Sensor mAccelerometer;
-    private Sensor mGyroscope;
+    private Sensor mLinearAccelerometer;
+    private Sensor mGravity;
+    private Sensor mMagneticField;
     TextView myLabel;
     public UUID uuid_tp = UUID.fromString("54c7001e-263c-4fb6-bfa7-2dfe5fba0f5b");
+    private float[] gravityValues = null;
+    private float[] magneticValues = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -62,8 +65,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         myLabel = (TextView)findViewById(R.id.label);
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-        mGyroscope = mSensorManager.getDefaultSensor(TYPE_GYROSCOPE);
+        mLinearAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        mGravity= mSensorManager.getDefaultSensor(TYPE_GRAVITY);
+        mMagneticField = mSensorManager.getDefaultSensor(TYPE_MAGNETIC_FIELD);;
 
         Button openButton = (Button)findViewById(R.id.open);
         Button closeButton = (Button)findViewById(R.id.close);
@@ -144,8 +148,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         Log.d("bluetooth", "pls start bluetooth");
         // which speed of sensor delay should we use?
         is_bluetooth_on = true;
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mLinearAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_GAME);
 
     }
 
@@ -157,8 +162,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     public void onStartLogClick(View view) {
         is_logging_on = true;
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-        mSensorManager.registerListener(this, mGyroscope, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mLinearAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mMagneticField, SensorManager.SENSOR_DELAY_GAME);
         myLabel.setText("Start collecting logs");
     }
 
@@ -190,6 +196,9 @@ public class MainActivity extends Activity implements SensorEventListener {
         float y = event.values[1];
         float z = event.values[2];
 
+        String data_accel;
+        String data_real_accel;
+
         String x_str = String.valueOf(x);
         String y_str = String.valueOf(y);
         String z_str = String.valueOf(z);
@@ -198,35 +207,81 @@ public class MainActivity extends Activity implements SensorEventListener {
         String date = df.format(new Date(event.timestamp / 1000000));
         //String date = df.format(Calendar.getInstance().getTime());
 
-        // Print log to the android studio console
+        data_accel= date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
 
-        String data = date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
-        Log.d("run", data + "\n");
 
-        // write data to file
-        if (is_logging_on) {
-            try {
-                myLabel.setText("Writing data!");
-                data = data + "\n";
-                f_outputStream.write(data.getBytes());
-                f_outputStream.flush();
-            } catch (Exception e) {
-                myLabel.setText("Error writing data");
-                e.printStackTrace();
+        // -----------------Absolute Acceleration using magnetic/gravity data ---------------------
+
+        // https://stackoverflow.com/questions/11578636/acceleration-from-devices-coordinate-system-
+        // into-absolute-coordinate-system/36477630
+
+
+        if ((gravityValues != null) && (magneticValues != null)
+                && (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION)) {
+
+            float[] deviceRelativeAcceleration = new float[4];
+            deviceRelativeAcceleration[0] = event.values[0];
+            deviceRelativeAcceleration[1] = event.values[1];
+            deviceRelativeAcceleration[2] = event.values[2];
+            deviceRelativeAcceleration[3] = 0;
+
+            // Change the device relative acceleration values to earth relative values
+            // X axis -> East
+            // Y axis -> North Pole
+            // Z axis -> Sky
+
+            float[] R = new float[16], I = new float[16], earthAcc = new float[16];
+
+            SensorManager.getRotationMatrix(R, I, gravityValues, magneticValues);
+
+            float[] inv = new float[16];
+
+            android.opengl.Matrix.invertM(inv, 0, R, 0);
+            android.opengl.Matrix.multiplyMV(earthAcc, 0, inv, 0, deviceRelativeAcceleration, 0);
+            Log.v("gravity", "Real Accel Values: (" + earthAcc[0] + ", " + earthAcc[1] + ", " + earthAcc[2] + ")");
+
+            data_real_accel = date + " " + "Absolute Accelerometer" + " " + earthAcc[0] + "," + earthAcc[1] + "," + earthAcc[2];
+
+            if (is_logging_on) {
+                try {
+                    myLabel.setText("Writing data!");
+                    data_accel = data_accel + "\n";
+                    f_outputStream.write(data_accel.getBytes());
+                    if (data_real_accel != null) {
+                        data_real_accel = data_real_accel + "\n";
+                        f_outputStream.write(data_real_accel.getBytes());
+                    }
+                    f_outputStream.flush();
+                } catch (Exception e) {
+                    myLabel.setText("Error writing data");
+                    e.printStackTrace();
+                }
             }
+
+            if (is_bluetooth_on) {
+                try
+                {
+                    myLabel.setText("Sending data!");
+                    sendData(data_accel );
+                    sendData(data_real_accel);
+                }
+                catch (IOException ex) {
+                    Log.d("bluetooth", "Error sending data");
+                    myLabel.setText("Error sending data");
+                }
+            }
+
+
+        } else if (event.sensor.getType() == TYPE_GRAVITY) {
+            gravityValues = event.values;
+            Log.v("gravity", "gravity Values: " + gravityValues[0]);
+        } else if (event.sensor.getType() == TYPE_MAGNETIC_FIELD) {
+            magneticValues = event.values;
+            Log.v("gravity", "magnetic Values: " + magneticValues[0]);
         }
 
-        if (is_bluetooth_on) {
-            try
-            {
-                myLabel.setText("Sending data!");
-                sendData(data);
-            }
-            catch (IOException ex) {
-                Log.d("bluetooth", "Error sending data");
-                myLabel.setText("Error sending data");
-            }
-        }
+        // -------------------------------------------------------------------------------------
+
 
     }
 
@@ -253,42 +308,9 @@ public class MainActivity extends Activity implements SensorEventListener {
                 +mExternalStorageAvailable+" writable="+mExternalStorageWriteable);
 
     }
-    /*
-    private void writeToSDFile(){
-
-        // Find the root of the external storage.
-        // http://developer.android.com/guide/topics/data/data-  storage.html#filesExternal
-
-        File root = android.os.Environment.getExternalStorageDirectory();
-        Log.d("external_storage", "\nExternal file system root: "+root);
-
-        // See http://stackoverflow.com/questions/3551821/android-write-to-sd-card-folder
-
-        File dir = new File (root.getAbsolutePath());
-        dir.mkdirs();
-        File file = new File(dir, "fall_detection_data.txt");
-
-        try {
-            FileOutputStream f = new FileOutputStream(file);
-            PrintWriter pw = new PrintWriter(f);
-            pw.println("Plz work");
-            pw.println("pretty plz");
-            pw.flush();
-            pw.close();
-            f.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            Log.d("external_storage", "******* File not found. Did you" +
-                    " add a WRITE_EXTERNAL_STORAGE permission to the   manifest?");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Log.d("external_storage","File written to "+file);
-
-    } */
 
 
-    // Code for Bluetooth
+    // ------------------------------ Code for Bluetooth ---------------------------------
 
     void findBT()
     {
