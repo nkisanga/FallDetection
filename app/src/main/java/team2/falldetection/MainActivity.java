@@ -116,18 +116,15 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     }
 
-    /**
-     * Called when the user taps the START button
-     */
+    // starts projecting values on screen
     public void StartRecordingActivity(View view) {
-        // Do something in response to button
         Intent intent = new Intent(this, StartRecordingActivity.class);
         startActivity(intent);
     }
 
+    // enables bluetooth
     public void onStartClick(View view) {
         Log.d("bluetooth", "pls start bluetooth");
-        // which speed of sensor delay should we use?
         is_bluetooth_on = true;
         mSensorManager.registerListener(this, mLinearAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mGravity, SensorManager.SENSOR_DELAY_GAME);
@@ -135,13 +132,16 @@ public class MainActivity extends Activity implements SensorEventListener {
 
 
     }
-
+    
+    // stops sending data to bluetooth
     public void onStopClick(View view) {
         is_bluetooth_on = false;
         mSensorManager.unregisterListener(this);
         myLabel.setText("Stopped sending data to BT");
     }
 
+    // begins listening for sensor data
+    // creates file on external storage
     public void onStartLogClick(View view) {
         is_logging_on = true;
         mSensorManager.registerListener(this, mLinearAccelerometer, SensorManager.SENSOR_DELAY_GAME);
@@ -171,6 +171,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         Log.d("external_storage","File written to "+file);
     }
 
+    // stops logging values and closes file output stream
     public void onStopLogClick(View view) {
         is_logging_on = false;
         mSensorManager.unregisterListener(this);
@@ -193,6 +194,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     }
 
     @Override
+    // stores or sends sensor data every time sensor registers a change
     public void onSensorChanged(SensorEvent event) {
 
         String sensorName = event.sensor.getName();
@@ -215,7 +217,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         data_accel= date + " " + sensorName + " " + x_str + "," + y_str + "," + z_str;
 
 
-        // -----------------Absolute Acceleration using magnetic/gravity data ---------------------
+        // calculates absolute acceleration using magnetic/gravity data
 
         // https://stackoverflow.com/questions/11578636/acceleration-from-devices-coordinate-system-
         // into-absolute-coordinate-system/36477630
@@ -287,7 +289,6 @@ public class MainActivity extends Activity implements SensorEventListener {
             Log.v("gravity", "magnetic Values: " + magneticValues[0]);
         }
 
-        // -------------------------------------------------------------------------------------
 
     }
 
@@ -317,6 +318,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     // ------------------------------ Code for Bluetooth ---------------------------------
 
+    // finds bluetooth connection if abailable
     void findBT()
     {
         Log.d("bluetooth", "in findBT");
@@ -348,6 +350,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
     }
 
+    // opens bluetooth connection
     void openBT() throws IOException
     {
         Log.d("bluetooth", "in openBT with " + uuid_tp.toString());
@@ -371,6 +374,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         beginListenForData();
     }
 
+    // listens for data from the laptop
     void beginListenForData()
     {
         final Handler handler = new Handler();
@@ -438,97 +442,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         workerThread.start();
     }
 
-    /*
-    public void beginListenForData() {
-        byte[] buffer = new byte[1024];  // buffer store for the stream
 
-        int bytes; // bytes returned from read()
-
-        // Keep listening to the InputStream until an exception occurs
-        while (true) {
-            // Read from the InputStream
-            try {
-                bytes = mmInputStream.read(buffer);
-                final String incomingMessage = new String(buffer, 0, bytes);
-                Log.d("bluetooth", "InputStream: " + incomingMessage);
-
-                runOnUiThread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        myLabel.setText(incomingMessage);
-                    }
-                });
-
-
-            } catch (IOException e) {
-                Log.e("bluetooth", "write: Error reading Input Stream. " + e.getMessage());
-                break;
-            }
-        }
-    }
-    */
-
-    /*
-    void beginListenForData()
-    {
-        final Handler handler = new Handler();
-        final byte delimiter = 10; //This is the ASCII code for a newline character
-
-        stopWorker = false;
-        readBufferPosition = 0;
-        readBuffer = new byte[1024];
-        workerThread = new Thread(new Runnable()
-        {
-            public void run()
-            {
-                while(!Thread.currentThread().isInterrupted() && !stopWorker)
-                {
-                    try
-                    {
-                        int bytesAvailable = mmInputStream.available();
-                        if(bytesAvailable > 0)
-                        {
-                            byte[] packetBytes = new byte[bytesAvailable];
-                            mmInputStream.read(packetBytes);
-                            for(int i=0;i<bytesAvailable;i++)
-                            {
-                                byte b = packetBytes[i];
-                                if(b == delimiter)
-                                {
-                                    byte[] encodedBytes = new byte[readBufferPosition];
-                                    System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
-                                    final String data = new String(encodedBytes, "US-ASCII");
-                                    readBufferPosition = 0;
-
-                                    handler.post(new Runnable()
-                                    {
-                                        public void run()
-                                        {
-                                            Log.d("bluetooth", data);
-                                            myLabel.setText(data);
-                                        }
-                                    });
-                                }
-                                else
-                                {
-                                    readBuffer[readBufferPosition++] = b;
-                                }
-                            }
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        stopWorker = true;
-                    }
-                }
-            }
-        });
-
-        workerThread.start();
-    }
-    */
-
+    // sends data over bluetooth if bluetooth is enabled
     void sendData(String msg) throws IOException
     {
         if (msg!=null) {
@@ -546,6 +461,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
     }
 
+    // closes bluetooth connection
     void closeBT() throws IOException
     {
         try {
